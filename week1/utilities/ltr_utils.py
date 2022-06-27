@@ -77,7 +77,7 @@ def create_sltr_hand_tuned_query(user_query, query_obj, click_prior_query, ltr_m
 
 def create_feature_log_query(query, doc_ids, click_prior_query, featureset_name, ltr_store_name, size=200, terms_field="_id"):
     ##### Step 3.b:
-    print("-----> TK : create_feature_log_query")
+    #print("-----> TK : create_feature_log_query")
     # Create our SLTR query, filtering so we only retrieve the doc id in question
     query_obj = {
         'query': {
