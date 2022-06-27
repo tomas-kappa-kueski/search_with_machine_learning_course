@@ -233,7 +233,7 @@ class DataPrepper:
                                                 size=len(query_doc_ids), terms_field=terms_field)
         ##### Step Extract LTR Logged Features:
         # IMPLEMENT_START --
-        print("-----> TK : __log_ltr_query_features: Extract log features out of the LTR:EXT response and place in a data frame")
+        #print("-----> TK : __log_ltr_query_features: Extract log features out of the LTR:EXT response and place in a data frame")
         response = self.opensearch.search( body=log_query, index=self.index_name)
 
         # Loop over the hits structure returned by running `log_query` and then extract out the features from the response per query_id and doc id.  Also capture and return all query/doc pairs that didn't return features
@@ -242,22 +242,53 @@ class DataPrepper:
         feature_results["doc_id"] = []  # capture the doc id so we can join later
         feature_results["query_id"] = []  # ^^^
         feature_results["sku"] = []
-        #feature_results["name_match"] = []
-        rng = np.random.default_rng(12345)
-        
-        # loop responses
-        for doc_id, hit in zip(query_doc_ids, response['hits']['hits']):
+        feature_results["name_match"] = []
+        feature_results["name_match_phrase"] = []
+        feature_results["customer_review_average"] = []
+        feature_results["customer_review_count"] = []
+        feature_results["artistName_match_phrase"] = []
+        feature_results["shortDescription_match_phrase"] = []
+        feature_results["longDescription_match_phrase"] = []
+        feature_results["salesRankShortTerm"] = []
+
+        #rng = np.random.default_rng(12345)
+
+        for doc_id in query_doc_ids:
             feature_results["doc_id"].append(doc_id)  # capture the doc id so we can join later
             feature_results["query_id"].append(query_id)
-            feature_results["sku"].append(doc_id)  
-            #feature_results["name_match"].append(rng.random())
-            doc_features = hit['fields']['_ltrlog'][0]['log_entry']
-            
-            for f in doc_features:
-                f_name = f['name']
-                if f_name not in feature_results:
-                    feature_results[f_name] = []
-                feature_results[f_name].append(f.get('value', 0))
+            feature_results["sku"].append(doc_id)
+            name_value = 0
+            name_match_phrase_value = 0
+            customer_review_average_value = 0
+            customer_review_count_value = 0
+            artistName_match_phrase_value = 0
+            shortDescription_match_phrase_value = 0
+            longDescription_match_phrase_value = 0
+            salesRankShortTerm_value = 0
+
+            for hit in response['hits']['hits']:
+                if str(doc_id) == hit['_id']:
+                    # I am assumming that features always comes in the same place
+                    # Maybe I am wrong but it is something that I could be improve
+                    name_value = hit['fields']['_ltrlog'][0]['log_entry'][0].get('value', 0)
+                    name_match_phrase_value = hit['fields']['_ltrlog'][0]['log_entry'][1].get('value', 0)
+                    customer_review_average_value = hit['fields']['_ltrlog'][0]['log_entry'][2].get('value', 0)
+                    customer_review_count_value = hit['fields']['_ltrlog'][0]['log_entry'][3].get('value', 0)
+                    artistName_match_phrase_value = hit['fields']['_ltrlog'][0]['log_entry'][4].get('value', 0)
+                    shortDescription_match_phrase_value = hit['fields']['_ltrlog'][0]['log_entry'][5].get('value', 0)
+                    longDescription_match_phrase_value = hit['fields']['_ltrlog'][0]['log_entry'][6].get('value', 0)
+                    salesRankShortTerm_value = hit['fields']['_ltrlog'][0]['log_entry'][7].get('value', 0)
+
+            #print(str(doc_id), str(hit['_id']), value)
+            feature_results["name_match"].append(name_value)
+            feature_results["name_match_phrase"].append( name_match_phrase_value )
+            feature_results["customer_review_average"].append( customer_review_average_value )
+            feature_results["customer_review_count"].append( customer_review_count_value )
+            feature_results["artistName_match_phrase"].append( artistName_match_phrase_value )
+            feature_results["shortDescription_match_phrase"].append( shortDescription_match_phrase_value )
+            feature_results["longDescription_match_phrase"].append( longDescription_match_phrase_value )
+            feature_results["salesRankShortTerm"].append( salesRankShortTerm_value )
+
         frame = pd.DataFrame(feature_results)
         return frame.astype({'doc_id': 'int64', 'query_id': 'int64', 'sku': 'int64'})
         # IMPLEMENT_END
