@@ -4,9 +4,21 @@ import random
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import re
+import pandas as pd
+
+#from nltk.stem.snowball import SnowballStemmer
+#stemmer = SnowballStemmer("english")
+
 def transform_name(product_name):
     # IMPLEMENT
-    return product_name
+    name_new = re.sub('\W+',' ', product_name.replace('_','').replace(',','')
+                        ).lower().translate(str.maketrans('âáàãêéíóôõúüñç'
+                                                            ,'aaaaeeiooouunc') )
+
+    # Apply Snowball stemmer
+    #name_new = ' '.join( map( stemmer.stem, name_new.split(' ') ) )
+    return name_new
 
 # Directory for product data
 directory = r'/workspace/datasets/product_data/products/'
@@ -41,6 +53,7 @@ names_as_labels = False
 if args.label == 'name':
     names_as_labels = True
 
+df = pd.DataFrame( columns=['Category', 'Name'] )
 print("Writing results to %s" % output_file)
 with open(output_file, 'w') as output:
     for filename in os.listdir(directory):
@@ -65,4 +78,20 @@ with open(output_file, 'w') as output:
                           cat = child.find('categoryPath')[len(child.find('categoryPath')) - 1][0].text
                       # Replace newline chars with spaces so fastText doesn't complain
                       name = child.find('name').text.replace('\n', ' ')
-                      output.write("__label__%s %s\n" % (cat, transform_name(name)))
+                      #output.write("__label__%s %s\n" % (cat, transform_name(name)))
+                      df = df.append( {'Category': cat, 'Name': transform_name(name) }, ignore_index=True )
+
+
+# Exclude Categorys with less products than the parameter <min_products>
+if min_products!=0:
+    catGroups = df.groupby('Category').size().reset_index(name='Size')
+    catGroups = catGroups[ catGroups['Size']>=min_products ]
+    cats = set(catGroups.Category)
+    df = df[ df['Category'].isin(cats) ]
+# Re Order the table
+df = df.sample(frac=1)
+# Write output
+with open(output_file, 'w') as output:
+    print("Writing results to %s" % output_file)
+    for index, row in df.iterrows():
+        output.write("__label__%s %s\n" % (row['Category'], row['Name'] ))
