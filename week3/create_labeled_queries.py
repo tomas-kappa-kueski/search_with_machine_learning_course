@@ -52,7 +52,7 @@ df = pd.read_csv(queries_file_name)[['category', 'query']]
 df = df[df['category'].isin(categories)]
 
 # IMPLEMENT ME: Convert queries to lowercase, and optionally implement other normalization, like stemming.
-def normalization(text, apply_stemmer=True):
+def normalization(text, apply_stemmer=False):
     # normalization
     text_norm = re.sub('\W+',' ', text.strip().replace('_','').replace(',','')
         ).lower().translate(str.maketrans('âáàãêéíóôõúüñç','aaaaeeiooouunc') )
